@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Harmony Player</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --primary: #6C5CE7;
+            --secondary: #A29BFE;
+            --bg: #F9F9F9;
+            --text: #2D3436;
+            --card-bg: rgba(255, 255, 255, 0.9);
+            --shadow: 8px 8px 16px #d1d1d1, -8px -8px 16px #ffffff;
+            --inset-shadow: inset 3px 3px 6px #d1d1d1, inset -3px -3px 6px #ffffff;
+        }
+
+        [data-theme="dark"] {
+            --bg: #1E1E1E;
+            --text: #F5F5F5;
+            --card-bg: rgba(30, 30, 30, 0.9);
+            --shadow: 8px 8px 16px #121212, -8px -8px 16px #2a2a2a;
+            --inset-shadow: inset 3px 3px 6px #121212, inset -3px -3px 6px #2a2a2a;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: var(--bg);
+            color: var(--text);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s ease;
+        }
+
+        .container {
+            padding: 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .search-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 20px;
+            border-radius: 25px;
+            border: none;
+            background: var(--card-bg);
+            box-shadow: var(--inset-shadow);
+            color: var(--text);
+            font-size: 14px;
+            padding-left: 45px;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #636e72;
+        }
+
+        .now-playing {
+            background: var(--card-bg);
+            border-radius: 24px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .now-playing:active {
+            transform: scale(0.98);
+        }
+
+        .album-art {
+            width: 200px;
+            height: 200px;
+            border-radius: 20px;
+            margin: 0 auto 20px;
+            box-shadow: var(--shadow);
+            object-fit: cover;
+            background: linear-gradient(45deg, #f3f3f3, #e0e0e0);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .song-info {
+            margin-bottom: 15px;
+        }
+
+        .song-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+        }
+
+        .artist {
+            font-size: 16px;
+            color: #636e72;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+        }
+
+        .progress-container {
+            margin: 20px 0;
+            position: relative;
+        }
+
+        .progress-bar {
+            height: 6px;
+            width: 100%;
+            background: #e0e0e0;
+            border-radius: 3px;
+            cursor: pointer;box-shadow: var(--inset-shadow);
+        }
+
+        .progress {
+            height: 100%;
+            border-radius: 3px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+
+        .time {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #636e72;
+            margin-top: 5px;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 25px;
+            margin: 20px 0;
+        }
+
+        .control-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--card-bg);
+            box-shadow: var(--shadow);
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: var(--text);
+        }
+
+        .control-btn:active {
+            box-shadow: var(--inset-shadow);
+            transform: scale(0.95);
+        }
+
+        .play-btn {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+        }
+
+        .play-btn i {
+            font-size: 28px;
+        }
+
+        .playlist {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+
+        .playlist-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            border-radius: 15px;
+            margin-bottom: 10px;
+            background: var(--card-bg);
+            box-shadow: var(--shadow);
+            transition: all 0.2s ease;
+        }
+
+        .playlist-item:active {
+            transform: scale(0.98);
+        }
+
+        .playlist-item.active {
+            background: linear-gradient(90deg, rgba(108, 92, 231, 0.1), transparent);
+            border-left: 4px solid var(--primary);
+        }
+
+        .playlist-art {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            margin-right: 15px;
+            object-fit: cover;
+        }
+
+        .playlist-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .playlist-title {
+            font-weight: 500;
+            margin-bottom: 3px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .playlist-artist {
+            font-size: 12px;
+            color: #636e72;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .playlist-duration {
+            font-size: 12px;
+            color: #636e72;
+            white-space: nowrap;
+            margin-left: 10px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #636e72;
+        }
+
+        .volume-container {
+            display: flex;
+            align-items: center;
+            margin-top: 10px;
+            gap: 10px;
+        }
+
+        .volume-slider {
+            flex: 1;
+            height: 4px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: #e0e0e0;
+            border-radius: 2px;
+            outline: none;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+        }
+
+        /* Адаптивные стили */
+        @media (max-width: 480px) {
+            .album-art {
+                width: 150px;
+                height: 150px;
+            }
+            
+            .controls {
+                gap: 15px;
+            }
+            
+            .control-btn {
+                width: 45px;height: 45px;
+            }
+            
+            .play-btn {
+                width: 60px;
+                height: 60px;
+            }
+            
+            .song-title {
+                font-size: 18px;
+            }
+            
+            .artist {
+                font-size: 14px;
+            }
+        }
+
+        /* Анимации */
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .rotate {
+            animation: rotate 20s linear infinite;
+        }
+
+        .paused {
+            animation-play-state: paused;
+        }
+
+        /* Скроллбар */
+        ::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">Harmony</div>
+            <button class="control-btn" id="theme-btn">
+                <i class="fas fa-moon"></i>
+            </button>
+        </div>
+
+        <div class="search-container">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" class="search-input" id="search-input" placeholder="Поиск треков..." autocomplete="off">
+        </div>
+
+        <div class="now-playing" id="now-playing">
+            <div class="album-art" id="album-art">
+                <i class="fas fa-music" style="font-size: 50px; color: #ccc;"></i>
+            </div>
+            <div class="song-info">
+                <div class="song-title" id="song-title">Выберите трек</div>
+                <div class="artist" id="artist">Начните воспроизведение</div>
+            </div>
+            <div class="progress-container">
+                <div class="progress-bar" id="progress-bar">
+                    <div class="progress" id="progress"></div>
+                </div>
+                <div class="time">
+                    <span id="current-time">0:00</span>
+                    <span id="duration">0:00</span>
+                </div>
+            </div>
+            <div class="volume-container">
+                <i class="fas fa-volume-down"></i>
+                <input type="range" min="0" max="1" step="0.01" value="0.7" class="volume-slider" id="volume-slider">
+                <i class="fas fa-volume-up"></i>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="control-btn" id="shuffle-btn">
+                <i class="fas fa-random"></i>
+            </button>
+            <button class="control-btn" id="prev-btn">
+                <i class="fas fa-step-backward"></i>
+            </button>
+            <button class="control-btn play-btn" id="play-btn">
+                <i class="fas fa-play" id="play-icon"></i>
+            </button>
+            <button class="control-btn" id="next-btn">
+                <i class="fas fa-step-forward"></i>
+            </button>
+            <button class="control-btn" id="repeat-btn">
+                <i class="fas fa-redo"></i>
+            </button>
+        </div>
+
+        <div class="playlist" id="playlist">
+            <div class="empty-state">
+                <i class="fas fa-music" style="font-size: 40px; margin-bottom: 10px;"></i>
+                <p>Загрузка плейлиста...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Инициализация Telegram WebApp
+        const tgApp = Telegram.WebApp;
+        tgApp.expand();
+        
+        // Устанавливаем цвет фона для Telegram
+        tgApp.setHeaderColor('#6C5CE7');
+        tgApp.setBackgroundColor('#F9F9F9');
+        
+        // Проверяем тему Telegram
+        if (tgApp.colorScheme === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');document.getElementById('theme-btn').innerHTML = '<i class="fas fa-sun"></i>';
+            tgApp.setBackgroundColor('#1E1E1E');
+        }
+        
+        // Данные плейлиста (в реальном приложении будут загружаться с сервера)
+        let playlist = [];
+        let filteredPlaylist = [];
+        let currentTrackIndex = 0;
+        let isPlaying = false;
+        let isShuffle = false;
+        let isRepeat = false;
+        let audio = new Audio();
+        audio.volume = 0.7;
+        
+        // Инициализация приложения
+        async function initApp() {
+            // Загружаем плейлист
+            await loadPlaylist();
+            
+            // Обработчики событий
+            document.getElementById('play-btn').addEventListener('click', togglePlay);
+            document.getElementById('prev-btn').addEventListener('click', prevTrack);
+            document.getElementById('next-btn').addEventListener('click', nextTrack);
+            document.getElementById('shuffle-btn').addEventListener('click', toggleShuffle);
+            document.getElementById('repeat-btn').addEventListener('click', toggleRepeat);
+            document.getElementById('progress-bar').addEventListener('click', seek);
+            document.getElementById('theme-btn').addEventListener('click', toggleTheme);
+            document.getElementById('volume-slider').addEventListener('input', changeVolume);
+            document.getElementById('search-input').addEventListener('input', searchTracks);
+            
+            // Обновление прогресса
+            audio.addEventListener('timeupdate', updateProgress);
+            audio.addEventListener('ended', onTrackEnd);
+            audio.addEventListener('loadedmetadata', updateDuration);
+            audio.addEventListener('error', handleAudioError);
+            
+            // Telegram кнопка назад
+            tgApp.BackButton.show();
+            tgApp.onEvent('backButtonClicked', function() {
+                if (document.getElementById('search-input').value) {
+                    // Если открыт поиск - закрываем его
+                    document.getElementById('search-input').value = '';
+                    searchTracks();
+                } else {
+                    tgApp.close();
+                }
+            });
+            
+            // Проверяем, есть ли сохраненное состояние
+            loadPlayerState();
+        }
+        
+        // Загрузка плейлиста (имитация API запроса)
+        async function loadPlaylist() {
+            try {
+                // В реальном приложении здесь был бы fetch к вашему API
+                // Для демо используем моковые данные
+                const mockPlaylist = [
+                    {
+                        id: 1,
+                        title: "Bohemian Rhapsody",
+                        artist: "Queen",
+                        duration: 355,
+                        cover: "https://i.ytimg.com/vi/fJ9rUzIMcZQ/maxresdefault.jpg",
+                        audio: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
+                    },
+                    {
+                        id: 2,
+                        title: "Imagine",
+                        artist: "John Lennon",
+                        duration: 184,
+                        cover: "https://i.ytimg.com/vi/ugrAo8wEPaI/maxresdefault.jpg",
+                        audio: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3"
+                    },
+                    {
+                        id: 3,
+                        title: "Billie Jean",
+                        artist: "Michael Jackson",
+                        duration: 294,
+                        cover: "https://i.ytimg.com/vi/Zi_XLOBDo_Y/maxresdefault.jpg",
+                        audio: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3"
+                    },
+                    {
+                        id: 4,
+                        title: "Smells Like Teen Spirit",
+                        artist: "Nirvana",
+                        duration: 301,
+                        cover: "https://i.ytimg.com/vi/hTWKbfoikeg/maxresdefault.jpg",
+                        audio: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3"
+                    },
+                    {
+                        id: 5,
+                        title: "Like a Rolling Stone",
+                        artist: "Bob Dylan",
+                        duration: 373,
+                        cover: "https://i.ytimg.com/vi/IwOfCgkyEj0/maxresdefault.jpg",
+                        audio: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3"
+                    },
+                    {
+                        id: 6,
+                        title: "Sweet Child O'Mine",
+                        artist: "Guns N' Roses",
+                        duration: 356,
+                        cover: "https://i.ytimg.com/vi/1w7OgIMMRc4/maxresdefault.jpg",
+                        audio: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3"
+                    },
+                    {
+                        id: 7,
+                        title: "Hotel California",
+                        artist: "Eagles",
+                        duration: 390,
+                        cover: "https://i.ytimg.com/vi/lrfhf1Gv4Tw/maxresdefault.jpg",
+                        audio: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3"
+                    },
+                    {
+                        id: 8,
+                        title: "Stairway to Heaven",
+                        artist: "Led Zeppelin",
+                        duration: 482,
+                        cover: "https://i.ytimg.com/vi/QkF3oxziUI4/maxresdefault.jpg",
+                        audio: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3"
+                    }
+                ];
+                
+                playlist = mockPlaylist;
+                filteredPlaylist = [...playlist];
+                renderPlaylist();
+                
+                // Если есть hash в URL (например, #track=3), загружаем указанный трек
+                const hashParams = new URLSearchParams(window.location.hash.substring(1));
+                if (hashParams.has('track')) {
+                    const trackId = parseInt(hashParams.get('track'));
+                    const trackIndex = playlist.findIndex(t => t.id === trackId);
+                    if (trackIndex !== -1) {
+                        currentTrackIndex = trackIndex;
+                        loadTrack(currentTrackIndex);
+                    }
+                }
+                
+            } catch (error) {
+                console.error('Ошибка загрузки плейлиста:', error);
+                document.getElementById('playlist').innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 40px; margin-bottom: 10px;"></i>
+                        <p>Не удалось загрузить плейлист</p>
+                        <button class="control-btn" onclick="loadPlaylist()" style="margin-top: 15px;">
+                            <i class="fas fa-sync-alt"></i> Повторить
+                        </button>
+                    </div>
+                `;
+            }
+        }
+        
+        // Рендер плейлиста
+        function renderPlaylist() {
+            const playlistElement = document.getElementById('playlist');
+            
+            if (filteredPlaylist.length === 0) {
+                playlistElement.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-search" style="font-size: 40px; margin-bottom: 10px;"></i>
+                        <p>Ничего не найдено</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            playlistElement.innerHTML = '';
+            
+            filteredPlaylist.forEach((track, index) => {
+                const originalIndex = playlist.findIndex(t => t.id === track.id);
+                const isActive = originalIndex === currentTrackIndex;
+                
+                const trackElement = document.createElement('div');trackElement.className = `playlist-item ${isActive ? 'active' : ''}`;
+                trackElement.innerHTML = `
+                    <img src="${track.cover}" class="playlist-art" onerror="this.src='data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"%3E%3Crect width=\"100\" height=\"100\" fill=\"%23f0f0f0\"/%3E%3Ctext x=\"50\" y=\"50\" font-family=\"Arial\" font-size=\"30\" fill=\"%23aaa\" text-anchor=\"middle\" dominant-baseline=\"middle\"%3E🎵%3C/text%3E%3C/svg%3E'">
+                    <div class="playlist-info">
+                        <div class="playlist-title">${track.title}</div>
+                        <div class="playlist-artist">${track.artist}</div>
+                    </div>
+                    <div class="playlist-duration">${formatTime(track.duration)}</div>
+                `;
+                
+                trackElement.addEventListener('click', () => {
+                    currentTrackIndex = playlist.findIndex(t => t.id === track.id);
+                    loadTrack(currentTrackIndex);
+                    if (isPlaying) {
+                        audio.play().catch(e => console.error('Ошибка воспроизведения:', e));
+                    }
+                    renderPlaylist();
+                });
+                
+                playlistElement.appendChild(trackElement);
+            });
+        }
+        
+        // Загрузка трека
+        function loadTrack(index) {
+            if (index < 0 || index >= playlist.length) return;
+            
+            const track = playlist[index];
+            document.getElementById('song-title').textContent = track.title;
+            document.getElementById('artist').textContent = track.artist;
+            document.getElementById('duration').textContent = formatTime(track.duration);
+            
+            const albumArt = document.getElementById('album-art');
+            albumArt.innerHTML = `<img src="${track.cover}" style="width:100%;height:100%;object-fit:cover;" onerror="this.innerHTML='<i class=\"fas fa-music\" style=\"font-size:50px;color:#ccc;\"></i>'">`;
+            
+            audio.src = track.audio;
+            audio.load();
+            
+            // Обновляем URL с hash для возможности поделиться треком
+            window.location.hash = track=`${track.id}`;
+            
+            // Сохраняем состояние
+            savePlayerState();
+        }
+        
+        // Воспроизведение/пауза
+        function togglePlay() {
+            if (playlist.length === 0) return;
+            
+            if (isPlaying) {
+                audio.pause();
+                document.getElementById('play-icon').className = 'fas fa-play';
+                document.getElementById('album-art').classList.add('paused');
+            } else {
+                // Если трек еще не загружен (первый запуск)
+                if (audio.src === '' && currentTrackIndex >= 0) {
+                    loadTrack(currentTrackIndex);
+                }
+                
+                audio.play().then(() => {
+                    document.getElementById('play-icon').className = 'fas fa-pause';
+                    document.getElementById('album-art').classList.remove('paused');
+                    document.getElementById('album-art').classList.add('rotate');
+                    isPlaying = true;
+                }).catch(e => {
+                    console.error('Ошибка воспроизведения:', e);
+                    tgApp.showAlert('Не удалось воспроизвести трек. Проверьте подключение к интернету.');
+                });
+            }
+        }
+        
+        // Следующий трек
+        function nextTrack() {
+            if (playlist.length === 0) return;
+            
+            if (isShuffle) {
+                let newIndex;
+                do {
+                    newIndex = Math.floor(Math.random() * playlist.length);
+                } while (newIndex === currentTrackIndex && playlist.length > 1);
+                currentTrackIndex = newIndex;
+            } else {
+                currentTrackIndex = (currentTrackIndex + 1) % playlist.length;}
+            
+            loadTrack(currentTrackIndex);
+            if (isPlaying) {
+                audio.play().catch(e => console.error('Ошибка воспроизведения:', e));
+            }
+            renderPlaylist();
+        }
+        
+        // Предыдущий трек
+        function prevTrack() {
+            if (playlist.length === 0) return;
+            
+            if (audio.currentTime > 3) {
+                // Если трек проигрывается больше 3 секунд, перезапускаем его
+                audio.currentTime = 0;
+                updateProgress();
+            } else {
+                // Иначе переключаем на предыдущий трек
+                if (isShuffle) {
+                    let newIndex;
+                    do {
+                        newIndex = Math.floor(Math.random() * playlist.length);
+                    } while (newIndex === currentTrackIndex && playlist.length > 1);
+                    currentTrackIndex = newIndex;
+                } else {
+                    currentTrackIndex = (currentTrackIndex - 1 + playlist.length) % playlist.length;
+                }
+                
+                loadTrack(currentTrackIndex);
+                if (isPlaying) {
+                    audio.play().catch(e => console.error('Ошибка воспроизведения:', e));
+                }
+                renderPlaylist();
+            }
+        }
+        
+        // Переключение повтора
+        function toggleRepeat() {
+            isRepeat = !isRepeat;
+            document.getElementById('repeat-btn').style.color = isRepeat ? 'var(--primary)' : '';
+            audio.loop = isRepeat;
+            savePlayerState();
+        }
+        
+        // Переключение случайного порядка
+        function toggleShuffle() {
+            isShuffle = !isShuffle;
+            document.getElementById('shuffle-btn').style.color = isShuffle ? 'var(--primary)' : '';
+            savePlayerState();
+        }
+        
+        // Обновление прогресса
+        function updateProgress() {
+            if (isNaN(audio.duration)) return;
+            
+            const progress = (audio.currentTime / audio.duration) * 100;
+            document.getElementById('progress').style.width = `${progress}%`;
+            
+            document.getElementById('current-time').textContent = formatTime(audio.currentTime);
+        }
+        
+        // Обновление длительности
+        function updateDuration() {
+            document.getElementById('duration').textContent = formatTime(audio.duration);
+        }
+        
+        // Перемотка
+        function seek(e) {
+            if (isNaN(audio.duration)) return;
+            
+            const progressBar = document.getElementById('progress-bar');
+            const clickPosition = e.offsetX;
+            const progressBarWidth = progressBar.clientWidth;
+            const seekTime = (clickPosition / progressBarWidth) * audio.duration;
+            audio.currentTime = seekTime;
+        }
+        
+        // Окончание трека
+        function onTrackEnd() {
+            if (!isRepeat) {
+                nextTrack();
+            }
+        }
+        
+        // Переключение темы
+        function toggleTheme() {
+            const root = document.documentElement;
+            const themeBtn = document.getElementById('theme-btn');
+            
+            if (root.getAttribute('data-theme') === 'dark') {
+                // Светлая тема
+                root.removeAttribute('data-theme');
+                themeBtn.innerHTML = '<i class="fas fa-moon"></i>';
+                tgApp.setBackgroundColor('#F9F9F9');
+            } else {
+                // Темная тема
+                root.setAttribute('data-theme', 'dark');
+                themeBtn.innerHTML = '<i class="fas fa-sun"></i>';
+                tgApp.setBackgroundColor('#1E1E1E');
+            }
+            
+            savePlayerState();
+        }
+        
+        // Изменение громкости
+        function changeVolume(e) {
+            audio.volume = e.target.value;
+            savePlayerState();
+        }
+        
+        // Поиск треков
+        function searchTracks() {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            
+            if (searchTerm === '') {
+                filteredPlaylist = [...playlist];
+            } else {
+                filteredPlaylist = playlist.filter(track => 
+                    track.title.toLowerCase().includes(searchTerm) || 
+                    track.artist.toLowerCase().includes(searchTerm)
+                );
+            }
+            
+            renderPlaylist();
+            
+            // Показываем/скрываем кнопку "Назад" в зависимости от наличия поиска
+            if (searchTerm) {
+                tgApp.BackButton.show();
+            } else {
+                tgApp.BackButton.hide();
+            }
+        }
+        
+        // Форматирование времени (секунды в MM:SS)
+        function formatTime(seconds) {
+            if (isNaN(seconds)) return '0:00';
+            
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+        }
+        
+        // Обработка ошибок аудио
+        function handleAudioError() {
+            tgApp.showAlert('Ошибка загрузки аудио. Проверьте подключение к интернету.');
+            document.getElementById('play-icon').className = 'fas fa-play';
+            isPlaying = false;
+        }
+        
+        // Сохранение состояния плеера
+        function savePlayerState() {
+            const state = {
+                volume: audio.volume,
+                isShuffle,
+                isRepeat,
+                currentTrackIndex,
+                isPlaying,
+                currentTime: audio.currentTime,
+                theme: document.documentElement.getAttribute('data-theme') || 'light'
+            };
+            
+            localStorage.setItem('harmonyPlayerState', JSON.stringify(state));
+        }
+        
+        // Загрузка состояния плеера
+        function loadPlayerState() {
+            const savedState = localStorage.getItem('harmonyPlayerState');
+            if (!savedState) return;
+            
+            try {
+                const state = JSON.parse(savedState);
+                
+                // Восстанавливаем настройки
+                audio.volume = state.volume || 0.7;
+                document.getElementById('volume-slider').value = audio.volume;
+                
+                isShuffle = state.isShuffle || false;
+                if (isShuffle) {
+                    document.getElementById('shuffle-btn').style.color = 'var(--primary)';
+                }
+                
+                isRepeat = state.isRepeat || false;
+                if (isRepeat) {
+                    document.getElementById('repeat-btn').style.color = 'var(--primary)';
+                    audio.loop = true;
+                }
+                
+                // Восстанавливаем текущий трек
+                if (state.currentTrackIndex !== undefined && playlist[state.currentTrackIndex]) {
+                    currentTrackIndex = state.currentTrackIndex;
+                    loadTrack(currentTrackIndex);
+                    
+                    // Восстанавливаем позицию проигрывания
+                    if (state.currentTime) {
+                        setTimeout(() => {
+                            audio.currentTime = state.currentTime;
+                        }, 500);
+                    }
+                    
+                    // Восстанавливаем состояние воспроизведения
+                    if (state.isPlaying) {
+                        setTimeout(() => {
+                            togglePlay();
+                        }, 1000);
+                    }
+                }
+                
+                // Восстанавливаем тему
+                if (state.theme === 'dark') {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                    document.getElementById('theme-btn').innerHTML = '<i class="fas fa-sun"></i>';
+                    tgApp.setBackgroundColor('#1E1E1E');
+                }
+                
+            } catch (e) {
+                console.error('Ошибка загрузки состояния:', e);}
+        }
+        
+        // Запуск приложения
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
